@@ -6,7 +6,7 @@ Revisión del 26/11/2026. Lo marcado como **verificado** se comprobó en la docu
 | Proyecto | Qué hace | Estado | Relación con este proyecto |
 |---|---|---|---|
 | [AttestProtocol](https://docs.attest.so/) ([repo](https://github.com/daccred/attest.so)) | Registro de atestaciones en Soroban: autoridades, *schemas*, *resolvers*, revocación y SDK | **Verificado:** Testnet y Mainnet (v2) | Registra quién afirma qué. No analiza el contenido de la evidencia. Es una opción para publicar resultados |
-| [Trustless Work](https://www.trustlesswork.com/) | Escrow con hitos, aprobaciones y disputas | Según su sitio: V1 en Mainnet, V2 beta en Testnet | Las aprobaciones son manuales. Es un posible caso de integración |
+| [Trustless Work](https://www.trustlesswork.com/) | Escrow con hitos, aprobaciones y disputas | Según su sitio: V1 en Mainnet, V2 beta en Testnet | Las aprobaciones de los hitos son manuales |
 | Reflector, Pyth, RedStone | Oráculos de precios | En producción | No cubren evidencia ni hechos |
 
 ## En otras redes

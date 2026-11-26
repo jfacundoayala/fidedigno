@@ -5,25 +5,30 @@
 - [ ] Definir la licencia
 - [ ] Confirmar el registro en el Hub
 
-## 2. Módulo de verificación (27/11–2/12)
-- [ ] Huella SHA-256 y huella perceptual
-- [ ] Reglas bloqueantes `AT-01`, `LE-01`, `OR-01`, `CP-01` y `PE-01`
-- [ ] Señales `S-CO-01`, `S-EX-01`, `S-OR-02`, `S-AT-02` y `S-CS-01`
-- [ ] Puntaje con pesos versionados (`reglas v0.1`)
-- [ ] Pruebas con imágenes sintéticas válidas e inválidas
+## 2. Captura y módulo de verificación (27/11–2/12)
+- [ ] Página de captura: imagen, huellas SHA-256 y perceptual, ancla de red y firma del emisor
+- [ ] Reglas bloqueantes `AT-01`, `LE-01`, `OR-01`, `CO-00`, `CP-01` y `PE-01`
+- [ ] Señales `S-CA-01`, `S-CO-01`, `S-EX-01`, `S-AT-02`, `S-OR-02` y `S-CS-01`
+- [ ] Cálculo del ICE con la tabla `reglas v0.1` y el límite por familia
+- [ ] Pruebas: los tres ejemplos de [MARCO-DE-VERIFICACION.md](MARCO-DE-VERIFICACION.md) y la reproducibilidad del cálculo
 
 ## 3. Contratos (27/11–1/12)
 - [ ] Contrato de verificación: `submit`, `dispute`, `resolve`, `finalize` y `require_verified`
-- [ ] Política por nivel de riesgo y fianzas con token de prueba
-- [ ] Pruebas unitarias, incluida la regla "árbitro distinto del emisor"
+- [ ] Roles con depósito (verificador y árbitro) y política por nivel de riesgo
+- [ ] Fianza proporcional al ICE y al monto, con token de prueba
+- [ ] Pruebas unitarias:
+  - el verificador tiene que ser distinto del emisor;
+  - el ancla fuera de margen se rechaza;
+  - el árbitro no puede ser parte.
 - [ ] Escrow de ejemplo
 - [ ] Despliegue en Testnet y registro de direcciones y hashes en `docs/evidencia/`
 
 ## 4. Entrega (2–4/12)
 - [ ] Casos de demostración:
-  - imagen válida: se paga;
+  - captura firmada válida: se paga;
   - imagen reutilizada: se rechaza;
-  - imagen disputada: resuelve el árbitro.
+  - disputa de cálculo: se recalcula el ICE;
+  - disputa de hecho: resuelve el árbitro.
 - [ ] Video de la demo (máximo 3 minutos)
 - [ ] Presentación del Demo Day
 - [ ] Entrega final: 4/12, 23:59, hora de Lima
