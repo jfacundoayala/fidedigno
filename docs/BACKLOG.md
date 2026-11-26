@@ -13,15 +13,15 @@
 - [ ] Pruebas: los tres ejemplos de [MARCO-DE-VERIFICACION.md](MARCO-DE-VERIFICACION.md) y la reproducibilidad del cálculo
 
 ## 3. Contratos (27/11–1/12)
-- [ ] Contrato de verificación: `submit`, `dispute`, `resolve`, `finalize` y `require_verified`
-- [ ] Roles con depósito (verificador y árbitro) y política por nivel de riesgo
-- [ ] Fianza proporcional al ICE y al monto, con token de prueba
-- [ ] Pruebas unitarias:
+- [x] Contrato de verificación: `submit`, `dispute`, `resolve`, `finalize` y `require_verified`
+- [x] Roles y política por nivel de riesgo (sin depósitos; ver [ARQUITECTURA.md](ARQUITECTURA.md))
+- [x] Fianza proporcional al ICE y al monto, con token de prueba
+- [x] Pruebas unitarias:
   - el verificador tiene que ser distinto del emisor;
   - el ancla fuera de margen se rechaza;
   - el árbitro no puede ser parte.
-- [ ] Escrow de ejemplo
-- [ ] Despliegue en Testnet y registro de direcciones y hashes en `docs/evidencia/`
+- [x] Escrow de ejemplo
+- [x] Despliegue en Testnet y registro de direcciones y hashes en `docs/evidencia/`
 
 ## 4. Entrega (2–4/12)
 - [ ] Casos de demostración:

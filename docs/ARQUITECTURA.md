@@ -1,45 +1,57 @@
 # Arquitectura
 
-> Propuesta para el prototipo. No hay nada implementado todavía.
-
 ```mermaid
 flowchart LR
   E[Emisor] -->|captura firmada con ancla de red| V[Verificador<br/>módulo TypeScript]
   V -->|rechazada| X[Sin pago]
-  E -->|firma de la captura + fianza| C[(Contrato de verificación<br/>Soroban)]
-  V -->|ICE firmado| C
+  E -->|firma + fianza| C[(Contrato de verificación)]
+  V -->|firma del resultado| C
   D[Contraparte] -->|disputa con fianza| C
   A[Árbitro registrado] -->|resolución| C
-  S[Escrow de ejemplo] -->|require_verified| C
+  S[Escrow de ejemplo] -->|require_verified_for| C
 ```
 
 ## Componentes
-| Componente | Entorno | Responsabilidad |
+| Componente | Entorno | Responsabilidad | Estado |
+|---|---|---|---|
+| Contrato de verificación ([código](../contracts/verificacion/src/lib.rs)) | Testnet | Roles, política por nivel, fianza proporcional, plazo, disputa y consulta | Implementado y desplegado |
+| Escrow de ejemplo ([código](../contracts/escrow-ejemplo/src/lib.rs)) | Testnet | Consulta el contrato de verificación antes de liberar un pago | Implementado y desplegado |
+| Módulo de verificación (TypeScript) | Verificador, fuera de la red | Reglas bloqueantes y cálculo determinista del ICE | Pendiente |
+| Página de captura (web) | Dispositivo del emisor | Toma la imagen, calcula las huellas, incluye el ancla de red y firma el registro | Pendiente |
+
+Los contratos están escritos en Rust con `soroban-sdk` 30. IDs y transacciones: [evidencia/TESTNET.md](evidencia/TESTNET.md).
+
+## Interfaz del contrato de verificación
+| Función | Quién firma | Descripción |
 |---|---|---|
-| Página de captura (web) | Dispositivo del emisor | Toma la imagen, calcula las huellas, incluye el ancla de red y firma el registro |
-| Módulo de verificación (TypeScript) | Verificador, fuera de la red | Reglas bloqueantes y cálculo determinista del ICE |
-| Contrato de verificación (Rust/Soroban) | Testnet | Roles, política por nivel, fianza proporcional, plazo, disputas y consulta |
-| Escrow de ejemplo (Rust/Soroban) | Testnet | Consulta `require_verified` antes de liberar un pago |
-
-Fuera del prototipo: varios verificadores con quórum, panel de árbitros, calibración de la tabla de señales y una interfaz web de consulta.
-
-## Interfaz del contrato (borrador)
-| Función | Descripción |
-|---|---|
-| `register_issuer(issuer)` | Alta de emisor (solo el admin) |
-| `register_verifier(verifier, stake)` | Alta de verificador con depósito |
-| `register_arbiter(arbiter, stake)` | Alta de árbitro con garantía |
-| `set_policy(level, min_ice, capture_required, window_secs, k, min_bond)` | Política por nivel de riesgo, versionada |
-| `submit(hash, capture, amount, level, issuer, result, verifier)` | Requiere la firma del emisor y la del verificador, que tienen que ser cuentas distintas. Comprueba el margen del ancla, calcula la fianza con el ICE y el monto, y la deposita. Falla si el ICE es menor al mínimo del nivel |
-| `dispute(hash, challenger, kind)` | Requiere una fianza igual y que el plazo esté abierto. `kind` es de cálculo o de hecho |
-| `resolve(hash, arbiter, valid)` | El árbitro no puede ser parte. Distribuye las fianzas y, en una disputa de cálculo perdida, descuenta el depósito del verificador |
-| `finalize(hash)` | Vencido el plazo sin disputa, marca la evidencia como verificada y devuelve la fianza |
-| `require_verified(hash, min_level) -> bool` | Devuelve `true` solo si la evidencia está verificada |
+| `register_issuer(issuer)` | Admin | Alta de emisor |
+| `register_verifier(verifier)` | Admin | Alta de verificador |
+| `register_arbiter(arbiter)` | Admin | Alta de árbitro |
+| `set_policy(level, policy)` | Admin | Política de un nivel: ICE mínimo, plazo, `k` y fianza mínima |
+| `submit(hash, issuer, verifier, amount, level, result, anchor_ledger)` | Emisor y verificador | Registra la evidencia y retiene la fianza. Falla si las dos cuentas son la misma, si el ICE es menor al mínimo del nivel, si el ancla está fuera de margen o si la huella ya se envió |
+| `dispute(hash, challenger)` | Quien disputa | Deposita una fianza igual. Solo con el plazo abierto |
+| `resolve(hash, arbiter, valid)` | Árbitro | El árbitro no puede ser parte. Quien gana recibe las dos fianzas |
+| `finalize(hash)` | Nadie | Vencido el plazo sin disputa, marca la evidencia como verificada y devuelve la fianza |
+| `require_verified(hash, min_level) -> bool` | Nadie | `true` solo si la evidencia está verificada con ese nivel o uno mayor |
+| `require_verified_for(hash, issuer, min_level, min_amount) -> bool` | Nadie | Además exige que la evidencia sea de `issuer` y por un monto igual o mayor. Es la consulta que tiene que usar un escrow |
+| `get(hash)`, `get_policy(level)` | Nadie | Lectura |
 
 `result` contiene el ICE en puntos básicos, la huella de las señales y la versión de reglas.
 
+`require_verified_for` existe para que una evidencia verificada por un monto chico, con una fianza chica, no habilite un pago grande.
+
+## Diferencias con el marco
+El contrato implementa una versión reducida de [MARCO-DE-VERIFICACION.md](MARCO-DE-VERIFICACION.md):
+
+| En el marco | En el contrato |
+|---|---|
+| Verificador y árbitro con depósito | Se registran sin depósito |
+| Disputa de cálculo y disputa de hecho | Un solo tipo de disputa, que resuelve el árbitro |
+| Comisión del árbitro | No hay comisión |
+| El ancla es el hash de un ledger | El contrato comprueba que el número de ledger sea reciente. El hash lo tiene que comprobar el verificador fuera de la red |
+| Captura firmada obligatoria en los niveles medio y alto | No se comprueba en el contrato |
+
 ## Decisiones pendientes
 - Almacenamiento de la imagen fuera de la red y acceso de las partes durante el plazo.
-- Token de prueba para fianzas y depósitos.
 - Biblioteca para la huella perceptual y umbral de similitud.
-- Margen de ledgers permitido entre el ancla y el envío.
+- Cómo liga un escrow la evidencia con un hito concreto. Hoy una misma evidencia podría usarse en dos escrows del mismo beneficiario.

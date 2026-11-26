@@ -4,7 +4,14 @@ Prototipo para verificar el contenido de la evidencia (por ejemplo, la foto de u
 
 Proyecto para **Stellar Codember Perú 2026**.
 
-> **Estado: diseño inicial.** Este repositorio contiene la especificación, el marco de verificación y el plan de trabajo. Todavía no hay código, contratos desplegados ni pruebas en Testnet.
+> **Estado: en construcción.** Los dos contratos están implementados, probados y desplegados en Stellar Testnet. Faltan el módulo que calcula el índice de confianza y la página de captura.
+
+| Contrato en Testnet | ID |
+|---|---|
+| Verificación | [`CAWLRO5ND3ZUSVISVWN5OZB4PTVGZ2AUOSGOGZVTYE7N6W7IYWFYXSAV`](https://stellar.expert/explorer/testnet/contract/CAWLRO5ND3ZUSVISVWN5OZB4PTVGZ2AUOSGOGZVTYE7N6W7IYWFYXSAV) |
+| Escrow de ejemplo | [`CA34LHQIDUJYYSMEQIRJZ6U6P662IWFPPJCFBSXOIXGYBQ2AKD6SITJX`](https://stellar.expert/explorer/testnet/contract/CA34LHQIDUJYYSMEQIRJZ6U6P662IWFPPJCFBSXOIXGYBQ2AKD6SITJX) |
+
+Recorrido completo con sus transacciones: [docs/evidencia/TESTNET.md](docs/evidencia/TESTNET.md).
 
 ## Problema
 Un contrato puede guardar la huella de un archivo y probar que no cambió. No puede saber si ese archivo es una prueba válida: si la foto es de ese momento, si es original o si ya se usó antes.
@@ -27,14 +34,26 @@ Detalle, tabla de señales y ejemplos: [docs/MARCO-DE-VERIFICACION.md](docs/MARC
 ## Alcance del prototipo
 Objetivo para la entrega del 4/12/2026:
 
-- [ ] Página de captura firmada con ancla de red
+- [x] Contrato de verificación: roles, fianza proporcional, plazo de disputa y consulta
+- [x] Contrato de escrow de ejemplo que consulta el resultado antes de pagar
+- [x] Despliegue en Stellar Testnet, con IDs y transacciones en `docs/evidencia/`
+- [x] Pruebas automáticas de los contratos (15)
 - [ ] Módulo TypeScript con las reglas bloqueantes y el cálculo del ICE para **imágenes**
-- [ ] Contrato Soroban con roles, fianza proporcional (token de prueba), plazo de disputa y la consulta `require_verified`
-- [ ] Contrato de escrow de ejemplo que consulta el resultado antes de pagar
-- [ ] Despliegue en Stellar Testnet, con direcciones y hashes en `docs/evidencia/`
-- [ ] Pruebas automáticas y video de la demo
+- [ ] Página de captura firmada con ancla de red
+- [ ] Video de la demo
 
-Queda fuera del prototipo: audio y video, varios verificadores con quórum, panel de árbitros, calibración de la tabla de señales, red principal y auditoría.
+Queda fuera del prototipo: audio y video, varios verificadores con quórum, depósitos de verificador y árbitro, panel de árbitros, calibración de la tabla de señales, red principal y auditoría.
+
+## Cómo ejecutarlo
+Requiere Docker y Bash. No hace falta instalar Rust ni el CLI de Stellar.
+
+```bash
+bash scripts/contratos.sh test      # corre las 15 pruebas
+bash scripts/contratos.sh build     # compila los .wasm en wasm/
+bash scripts/contratos.sh script scripts/demo-testnet.sh   # despliega y recorre el flujo en Testnet
+```
+
+El último comando crea cuentas de prueba en Testnet. Sus claves quedan en un volumen de Docker, fuera del repositorio.
 
 ## Limitaciones
 - El ICE estima confianza; no prueba que un hecho haya ocurrido.
@@ -48,7 +67,8 @@ Queda fuera del prototipo: audio y video, varios verificadores con quórum, pane
 | Documento | Contenido |
 |---|---|
 | [MARCO-DE-VERIFICACION.md](docs/MARCO-DE-VERIFICACION.md) | Captura firmada, ICE, fianza, disputa, reglas y niveles de riesgo |
-| [ARQUITECTURA.md](docs/ARQUITECTURA.md) | Componentes, interfaz del contrato y decisiones pendientes |
+| [ARQUITECTURA.md](docs/ARQUITECTURA.md) | Componentes, interfaz del contrato y diferencias con el marco |
+| [evidencia/TESTNET.md](docs/evidencia/TESTNET.md) | Contratos desplegados y transacciones del recorrido |
 | [INVESTIGACION-SIMILARES.md](docs/INVESTIGACION-SIMILARES.md) | Proyectos relacionados en Stellar y otras redes |
 | [BACKLOG.md](docs/BACKLOG.md) | Plan de trabajo hasta la entrega |
 
