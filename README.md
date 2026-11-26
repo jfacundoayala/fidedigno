@@ -1,6 +1,6 @@
 # Fidedigno
 
-Prototipo para verificar el contenido de la evidencia (por ejemplo, la foto de una entrega) antes de que un contrato de Soroban la use para liberar un pago.
+Prototipo para verificar el contenido de la evidencia (por ejemplo, la foto de una entrega) antes de que un contrato inteligente en Stellar la use para liberar un pago.
 
 Proyecto para **Stellar Codember Perú 2026**.
 
