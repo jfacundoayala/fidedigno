@@ -1,0 +1,10 @@
+.env
+.env.*
+*.key
+*.pem
+secret*
+.stellar/
+target/
+node_modules/
+dist/
+coverage/
