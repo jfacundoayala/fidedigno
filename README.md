@@ -1,91 +1,61 @@
-# Fidedigno (nombre de trabajo)
+# Fidedigno
 
-Kit para builders de Stellar que **revisa el contenido de la evidencia** (fotos, audios, documentos y datos) antes de que un escrow libere un pago o un contrato la dé por buena.
+Prototipo para verificar el contenido de la evidencia (por ejemplo, la foto de una entrega) antes de que un contrato de Soroban la use para liberar un pago.
 
-Preparado para **Stellar Codember Perú 2026**.
+Proyecto para **Stellar Codember Perú 2026**.
 
-> **Estado: punto de partida (checkpoint).** El repo tiene el diseño, el alcance y el backlog. Todavía **no** hay código implementado, contratos desplegados, hashes de Testnet ni video demo. Esas cosas se agregan con evidencia real antes del 4/12/2026.
+> **Estado: diseño inicial.** Este repositorio contiene la especificación, el marco de verificación y el plan de trabajo. Todavía no hay código, contratos desplegados ni pruebas en Testnet.
 
-## El problema
-En Stellar ya se puede **registrar** quién afirma algo (AttestProtocol) y **pagar por hitos** (Trustless Work). Pero cuando alguien sube "la prueba" de un hito, sea una foto de la entrega, un audio de conformidad o un PDF, **nadie revisa si esa evidencia es real**:
-- si la foto es de ese día y de ese lugar;
-- si es original o está copiada de internet;
-- si fue editada o generada con IA;
-- si contradice hitos anteriores.
+## Problema
+Un contrato puede guardar la huella de un archivo y probar que no cambió. No puede saber si ese archivo es una prueba válida: si la foto es de ese día, si es original o si ya se usó antes.
 
-Hoy lo revisa una persona a ojo o no lo revisa nadie. Anclar un dato en la red prueba que **no cambió**, no que **sea verdad**.
+## Enfoque
+La verificación se divide en tres pasos:
 
-## La propuesta: verificación mixta en tres capas
-| Capa | Qué hace | De dónde viene |
-|---|---|---|
-| **1. Reglas de integridad** | Bloqueantes: sin firma del emisor o con huella repetida, se rechaza directo | **ALCOA+**, usado en industrias reguladas |
-| **2. Puntaje de confianza** | Algoritmos propios suman señales: fecha y GPS de la foto contra lo declarado, foto firmada desde la cámara (C2PA), imagen repetida, edición o IA, coherencia con hitos anteriores | **Capa propia** |
-| **3. Disputa con fianza** | Según el puntaje, la evidencia queda en un plazo donde cualquiera puede disputarla poniendo una fianza; el que mintió pierde la suya | Modelo del **oráculo optimista de UMA** (Ethereum), que no encontramos en Stellar |
+1. **Reglas bloqueantes**, basadas en los principios de integridad de datos ALCOA+. Si una falla, la evidencia se rechaza.
+2. **Puntaje de confianza:** una suma ponderada de señales calculadas fuera de la red, como los metadatos de la foto, la repetición de imágenes o el manifiesto C2PA.
+3. **Plazo de disputa con fianza**, siguiendo el modelo de oráculo optimista (UMA). La evidencia queda aceptada si nadie la disputa dentro del plazo.
 
-El **nivel de riesgo GAMP 5** de cada contrato (bajo, medio o alto) define cuánto puntaje se exige, cuánto dura el plazo y qué fianza se pide.
+Cuánto puntaje se exige, cuánto dura el plazo y qué fianza se pide dependen del nivel de riesgo que declara cada contrato. Ese criterio está inspirado en el enfoque basado en riesgo de GAMP 5.
 
-| Puntaje | Resultado |
+Detalle: [docs/MARCO-ALCOA-GAMP.md](docs/MARCO-ALCOA-GAMP.md).
+
+## Alcance del prototipo
+Objetivo para la entrega del 4/12/2026:
+
+- [ ] Módulo TypeScript con las reglas bloqueantes y el puntaje para **imágenes**
+- [ ] Contrato Soroban con el plazo de disputa, las fianzas (token de prueba) y la consulta `require_verified`
+- [ ] Contrato de escrow de ejemplo que consulta el resultado antes de pagar
+- [ ] Despliegue en Stellar Testnet, con direcciones y hashes en `docs/evidencia/`
+- [ ] Pruebas automáticas y video de la demo
+
+Queda fuera del prototipo: audio y video, ajuste automático de pesos, árbitros descentralizados, red principal y auditoría.
+
+## Limitaciones
+- El puntaje aumenta la confianza en la evidencia; no prueba que un hecho haya ocurrido.
+- Los metadatos (EXIF) se pueden falsificar. Por eso nunca se usan como única señal.
+- Este proyecto toma ideas de ALCOA+ y GAMP 5. No es una certificación ni una validación regulatoria.
+- Solo Stellar Testnet y tokens de prueba.
+
+## Documentación
+| Documento | Contenido |
 |---|---|
-| Igual o mayor al corte alto | Pasa con un plazo de disputa corto y fianza baja |
-| Entre el corte bajo y el alto | Plazo largo y fianza alta, o un verificador humano |
-| Menor al corte bajo, o falla un bloqueante | Se rechaza y no hay pago |
-
-Con cada disputa resuelta, el sistema **ajusta el peso de las señales**: la verificación mejora con el uso.
-
-Detalle completo: [docs/MARCO-ALCOA-GAMP.md](docs/MARCO-ALCOA-GAMP.md).
-
-## Cómo lo usaría un builder (objetivo del P0)
-```rust
-// Dentro del escrow del builder, antes de liberar un hito:
-let ok = fidedigno::require_verified(&env, &fidedigno_id, &evidence_hash, RiskLevel::Medium);
-if !ok { panic_with_error!(&env, Error::EvidenceNotVerified); }
-```
-Fuera de la red, el SDK en TypeScript revisa la evidencia y calcula el puntaje. El resultado se registra como atestación en **AttestProtocol** y el contrato de Fidedigno maneja el plazo de disputa y las fianzas. Arquitectura: [docs/ARQUITECTURA.md](docs/ARQUITECTURA.md).
-
-## En qué se apoya (no lo reinventamos)
-- **AttestProtocol:** registro de atestaciones en Soroban, en Testnet y Mainnet ([docs](https://docs.attest.so/)).
-- **Trustless Work:** escrow por hitos en Stellar ([web](https://www.trustlesswork.com/)). Es el primer caso de integración.
-- Comparación completa: [docs/INVESTIGACION-SIMILARES.md](docs/INVESTIGACION-SIMILARES.md).
-
-## Público: devs de Stellar
-Fidedigno es una **pieza del kit del builder**, como una librería o un oráculo. Un dev la agrega a su proyecto para que **los datos que entran a su contrato sean verdad** y su contrato no se apoye en pruebas falsas.
-
-El usuario final no la ve: la usa el dev. Casos donde encaja:
-- escrows y pagos por hitos;
-- trazabilidad y activos del mundo real (RWA);
-- seguros paramétricos;
-- marketplaces y subsidios por resultados.
-
-Lo que gana el dev: no tiene que inventar su propia verificación, su contrato es más confiable para sus usuarios e inversores, y cada verificación queda auditable en la red.
-
-## Alcance del P0 (hasta el 4/12)
-1. **SDK TypeScript** con bloqueantes ALCOA+ y 4 señales de puntaje para **fotos**: fecha y GPS de la foto (EXIF) contra lo declarado, foto repetida (huella perceptual), manifiesto C2PA si viene, y coherencia con el hito anterior.
-2. **Tabla GAMP 5** de cortes, plazos y fianzas, con versión.
-3. **Contrato Soroban `fidedigno`** en Testnet: recibe el resultado, abre el plazo de disputa, maneja las fianzas con un token de prueba y expone `require_verified`.
-4. **Atestación del resultado en AttestProtocol** (Testnet).
-5. **Escrow de ejemplo** que libera el hito solo con evidencia verificada.
-6. **Evidencia:** direcciones, hashes de Testnet, pruebas automáticas y video de 3 minutos como máximo.
-
-**Fuera del P0:** audio y video (solo huella y metadatos), detección de IA con modelos propios, jurado descentralizado, ajuste automático de pesos (en el P0 los pesos son fijos y declarados), red principal y auditoría externa.
-
-## Qué NO promete
-- No prueba al 100% que algo pasó en el mundo físico. **Sube la confianza** juntando señales independientes y **hace caro mentir** con la fianza.
-- No es un oráculo de precios.
-- No usa dinero real: solo Stellar Testnet y tokens de prueba.
+| [MARCO-ALCOA-GAMP.md](docs/MARCO-ALCOA-GAMP.md) | Reglas, señales, niveles de riesgo y disputa |
+| [ARQUITECTURA.md](docs/ARQUITECTURA.md) | Componentes, interfaz del contrato y decisiones pendientes |
+| [INVESTIGACION-SIMILARES.md](docs/INVESTIGACION-SIMILARES.md) | Proyectos relacionados en Stellar y otras redes |
+| [BACKLOG.md](docs/BACKLOG.md) | Plan de trabajo hasta la entrega |
 
 ## Hitos del evento
-- Registro del repositorio en el Hub: 25/11/2026 23:59, hora de Lima. **Pendiente: confirmar con la organización si se acepta el registro.** Crear este repo no equivale a registrarlo.
-- Entrega final: 4/12/2026 23:59, hora de Lima.
-- Demo Day: 5/12/2026, Lima, presencial.
+| Hito | Fecha (hora de Lima) |
+|---|---|
+| Registro del repositorio en el Hub | 25/11/2026 23:59 |
+| Entrega final | 4/12/2026 23:59 |
+| Demo Day (Lima) | 5/12/2026 |
 
-## Backlog
-Se lleva en los Issues del repo. Lista inicial en [docs/BACKLOG.md](docs/BACKLOG.md).
+## Autoría
+- El código se escribe durante el período del evento (del 14/11 al 4/12/2026).
+- No incorpora código previo ni de terceros. Cualquier reutilización futura se declarará con su origen y licencia.
+- La documentación se preparó con asistencia de IA.
 
-## Autoría, trabajo previo e IA
-- El código de este repo se escribe durante el período del evento, del 14/11 al 4/12/2026.
-- **Trabajo previo declarado:** el autor desarrolló antes GALCOA+ (prototipo de remitos verificados con ALCOA+ en Stellar Testnet, para distribuidoras). Fidedigno reutiliza **ideas** de ese proyecto: reglas con identificador, huella de 32 bytes, falla cerrada y que la IA nunca decide el veredicto. Cambia el público (devs de Stellar) y agrega el puntaje y la disputa con fianza. **No se copia código.** Si más adelante se reutiliza algo, se declara con su origen y licencia.
-- La documentación inicial se preparó con asistencia de IA.
-- Licencia: pendiente de definir.
-
-## Seguridad
-Nunca se suben al repo claves ni semillas (tampoco de Testnet), archivos `.env`, datos personales ni evidencia real de terceros. Para las demos se usan datos sintéticos.
+## Licencia
+Pendiente de definir.
